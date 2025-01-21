@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>지수법칙의 활용과 곱셈공식 퀴즈</title>
+  <!-- MathJax 로드: LaTeX 수식을 렌더링하기 위함 -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #mainContainer {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .hidden { display: none; }
+    .questionBox {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .choice {
+      display: block;
+      margin: 8px 0;
+      padding: 8px;
+      background: #eee;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .choice:hover {
+      background: #ddd;
+    }
+    #energyBarContainer {
+      width: 100%;
+      height: 20px;
+      background: #ccc;
+      border-radius: 10px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    #energyBar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, #ff6666, #ff0000);
+    }
+    .infoPanel {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    .scorePanel {
+      margin: 10px 0;
+      font-size: 1.1em;
+      color: #007700;
+    }
+    #response {
+      white-space: pre-wrap;
+      background: #eef;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .centered {
+      text-align: center;
+    }
+    /* 예시용 버튼 스타일 */
+    .btn {
+      background: #0077cc;
+      color: #fff;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 6px;
+    }
+    .btn:hover {
+      background: #005fa3;
+    }
+  </style>
+</head>
+<body>
+
+<div id="mainContainer">
+
+  <h1>지수법칙의 활용과 곱셈공식</h1>
+  
+  <!-- (0) 시작 화면 -->
+  <div id="startScreen">
+    <p>플레이어 이름을 입력하세요:</p>
+    <input type="text" id="playerName" placeholder="이름" style="width: 200px;" />
+    <p>난이도를 선택하세요:</p>
+    <select id="difficultySelect">
+      <option value="top">최상 (20초 제한, 문제당 20점)</option>
+      <option value="high">상 (30초 제한, 문제당 15점)</option>
+      <option value="mid">중 (40초 제한, 문제당 13점)</option>
+      <option value="low">하 (시간제한 없음, 문제당 10점)</option>
+    </select>
+    <div style="margin-top: 10px;">
+      <button class="btn" onclick="startGame()">시작하기</button>
+    </div>
+  </div>
+
+  <!-- (1) 문제/진행 화면 -->
+  <div id="quizScreen" class="hidden">
+    <div class="infoPanel">
+      <span id="lifeInfo">남은 기회: 3</span> | 
+      <span id="totalTimeInfo">전체 경과 시간: 0초</span>
+    </div>
+    <div id="energyBarContainer" class="hidden">
+      <div id="energyBar"></div>
+    </div>
+    
+    <div class="questionBox">
+      <div id="questionText" style="margin-bottom: 10px;"></div>
+      <div id="choiceList"></div>
+    </div>
+    
+    <div class="scorePanel">
+      현재 점수: <span id="scoreDisplay">0</span>
+    </div>
+  </div>
+
+  <!-- (2) 게임 종료 화면 -->
+  <div id="endScreen" class="hidden centered">
+    <h2>게임 종료!</h2>
+    <p>최종 점수: <span id="finalScore">0</span></p>
+    <p>총 경과 시간: <span id="finalTime">0</span>초</p>
+    <button class="btn" onclick="sendScore()">점수 전송</button>
+    <div id="response"></div>
+  </div>
+
+</div>
+
+<script>
+// 문제 데이터 (문제20 제외).
+const questions = [
+  // #17
+  {
+    text: "문제17) 다음 식 \\((a^{1/2} + a^{-1/2})(a^{1/2} - a^{-1/2})\\) 을 간단히 하시오.",
+    choices: [
+      "\\(a + a^{-1}\\)",
+      "\\(a - a^{-1}\\)",
+      "\\(2\\)",
+      "\\(0\\)"
+    ],
+    correct: 1
+  },
+  // #18
+  {
+    text: "문제18) 다음 식 \\((\\sqrt{a} + \\sqrt{b})(\\sqrt{a}-\\sqrt{b})\\) 을 간단히 하시오.",
+    choices: [
+      "\\(a - b\\)",
+      "\\(a + b\\)",
+      "\\(\\sqrt{ab}\\)",
+      "\\(0\\)"
+    ],
+    correct: 0
+  },
+  // #19
+  {
+    text: "문제19) \\((a^{1/2}+a^{-1/2})^2 - (a^{1/2}-a^{-1/2})^2\\) 의 값을 구하시오.",
+    choices: [
+      "2",
+      "4",
+      "\\(a + a^{-1}\\)",
+      "0"
+    ],
+    correct: 1
+  },
+  // #21
+  {
+    text: "문제21) \\((a^{1/3} + a^{-1/3})^3 + (a^{1/3} - a^{-1/3})^3\\) 을 간단히.",
+    choices: [
+      "2(a + a^{-1})",
+      "2a + 6a^{-1}",
+      "a^3 + a^{-3}",
+      "8"
+    ],
+    correct: 1
+  },
+  // #22
+  {
+    text: "문제22) \\((a^{1/3} + a^{-1/3})^3 - (a^{1/3} - a^{-1/3})^3\\) 을 간단히.",
+    choices: [
+      "3(a - a^{-1})",
+      "\\(a + a^{-1}\\)",
+      "\\(a^2 + a^{-2}\\)",
+      "6"
+    ],
+    correct: 1
+  },
+  // #23
+  {
+    text: "문제23) \\((a^{1/4} - b^{1/4})(a^{1/4}+b^{1/4})(a^{1/2}+b^{1/2})\\) 을 간단히.",
+    choices: [
+      "\\(a - b\\)",
+      "\\(a + b\\)",
+      "\\(a^2 - b^2\\)",
+      "\\((a-b)(a+b)\\)"
+    ],
+    correct: 0
+  },
+  // #24
+  {
+    text: "문제24) \\((a^{1/4} - a^{-1/4})(a^{1/4}+a^{-1/4})(a^{1/2}+a^{-1/2})\\) 을 간단히.",
+    choices: [
+      "\\(a - a^{-1}\\)",
+      "\\(a + a^{-1}\\)",
+      "\\(a^{1/2} - a^{-1/2}\\)",
+      "2"
+    ],
+    correct: 0
+  },
+  // #25
+  {
+    text: "문제25) \\(a + a^{-1} = 9\\) 일 때, \\(a^2 + a^{-2}\\) 의 값은?",
+    choices: [
+      "79","81","9","2"
+    ],
+    correct: 0
+  },
+  // #26
+  {
+    text: "문제26) \\(a + a^{-1} = 9\\) 일 때, \\(a^{1/2} + a^{-1/2}\\) 의 값은?",
+    choices: [
+      "\\(\\sqrt{7}\\)",
+      "\\(\\sqrt{11}\\)",
+      "3",
+      "11"
+    ],
+    correct: 1
+  },
+  // #27
+  {
+    text: "문제27) \\(a + a^{-1} = 9\\) 일 때, \\(a^{3/2} + a^{-3/2}\\) 의 값은?",
+    choices: [
+      "8\\(\\sqrt{11}\\)",
+      "\\(\\sqrt{11}\\)",
+      "27",
+      "81"
+    ],
+    correct: 0
+  },
+  // #28
+  {
+    text: "문제28) \\(a^{1/2} - a^{-1/2} = 3\\) (\\(a>1\\)) 일 때, \\(a + a^{-1}\\) 의 값은?",
+    choices: [
+      "9","11","7","36"
+    ],
+    correct: 1
+  },
+  // #29
+  {
+    text: "문제29) \\(a^{1/2} - a^{-1/2} = 3\\) (\\(a>1\\)) 일 때, \\(a - a^{-1}\\) 의 값은?",
+    choices: [
+      "3\\(\\sqrt{5}\\)",
+      "3\\(\\sqrt{13}\\)",
+      "4\\(\\sqrt{3}\\)",
+      "9"
+    ],
+    correct: 1
+  },
+  // #30
+  {
+    text: "문제30) \\(a^{1/2} - a^{-1/2} = 3\\) (\\(a>1\\)) 일 때, \\(a^2 + a^{-2}\\) 의 값은?",
+    choices: [
+      "36","117","119","121"
+    ],
+    correct: 2
+  },
+  // #31
+  {
+    text: "문제31) \\(a^{1/2} - a^{-1/2} = 3\\) (\\(a>1\\)) 일 때, \\(a^{3/2} - a^{-3/2}\\) 의 값은?",
+    choices: [
+      "27","36","8","4"
+    ],
+    correct: 1
+  },
+  // #32
+  {
+    text: "문제32) \\(a^{1/2} + a^{-1/2} = 3\\) 일 때, \\(a - a^{-1}\\) 의 가능한 값은?",
+    choices: [
+      "3\\(\\sqrt{5}\\)",
+      "-3\\(\\sqrt{5}\\)",
+      "\\(\\pm 3\\sqrt{5}\\)",
+      "5"
+    ],
+    correct: 2
+  },
+  // #33
+  {
+    text: "문제33) \\(a^{1/2} + a^{-1/2} = 3\\) 일 때, \\(a + a^{-1}\\) 의 값을 구하시오.",
+    choices: [
+      "5","7","9","11"
+    ],
+    correct: 1
+  },
+  // #34
+  {
+    text: "문제34) \\(a^{1/2} + a^{-1/2} = 3\\) 일 때, \\(a^2 + a^{-2}\\) 의 값을 구하시오.",
+    choices: [
+      "45","47","49","119"
+    ],
+    correct: 1
+  },
+  // #35
+  {
+    text: "문제35) \\(a^{1/2} + a^{-1/2} = 3\\) 일 때, \\(a^{3/2} + a^{-3/2}\\) 의 값을 구하시오.",
+    choices: [
+      "9","14","16","18"
+    ],
+    correct: 3
+  },
+  // #36
+  {
+    text: "문제36) \\(a^{1/3} + a^{-1/3} = 4\\) 일 때, \\(a + a^{-1}\\) 의 값을 구하시오.",
+    choices: [
+      "52","61","64","13"
+    ],
+    correct: 1
+  },
+  // #37
+  {
+    text: "문제37) \\(a^{1/3} + a^{-1/3} = 4\\) 일 때, \\(a^{1/2} + a^{-1/2}\\) 의 값을 구하시오.",
+    choices: [
+      "3\\(\\sqrt{6}\\)",
+      "4\\(\\sqrt{2}\\)",
+      "6",
+      "\\(\\sqrt{6}\\)"
+    ],
+    correct: 0
+  },
+  // #38
+  {
+    text: "문제38) \\(a^{1/3} + a^{-1/3} = 4\\) 일 때, \\(a^{2/3} + a^{-2/3}\\) 의 값을 구하시오.",
+    choices: [
+      "14","16","12","11"
+    ],
+    correct: 0
+  },
+  // #39
+  {
+    text: "문제39) \\(a^{2r} = 2\\) 일 때, \\(\\dfrac{a^{6r} - a^{-6r}}{a^{2r} - a^{-2r}}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\tfrac{21}{4}\\)",
+      "\\(\\tfrac{63}{8}\\)",
+      "6",
+      "\\(\\tfrac{7}{2}\\)"
+    ],
+    correct: 0
+  },
+  // #40
+  {
+    text: "문제40) \\(a^{2r} = 2\\) 일 때, \\(\\dfrac{a^{5r} + a^{-7r}}{a^{r} + a^{-3r}}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\tfrac{13}{4}\\)",
+      "\\(\\tfrac{5}{2}\\)",
+      "3",
+      "4"
+    ],
+    correct: 0
+  },
+  // #41
+  {
+    text: "문제41) \\(a^{2r} = 2\\) 일 때, \\(\\dfrac{a^{3r} + a^{-3r}}{a^{r} + a^{-r}}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\tfrac{3}{2}\\)",
+      "2",
+      "\\(\\tfrac{5}{2}\\)",
+      "3"
+    ],
+    correct: 0
+  },
+  // #42
+  {
+    text: "문제42) \\(a^{2r} = 2\\) 일 때, \\(\\dfrac{a^{r} + a^{-r}}{a^{r} - a^{-r}}\\) 의 값을 구하시오.",
+    choices: [
+      "1","2","3","\\(\\tfrac{1}{2}\\)"
+    ],
+    correct: 2
+  },
+  // #43
+  {
+    text: "문제43) \\(a^x = \\sqrt{3}\\) 일 때, \\(\\dfrac{a^{3x} - a^{-3x}}{a^{3x} + a^{-3x}}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\tfrac{13}{14}\\)",
+      "\\(\\tfrac{4}{5}\\)",
+      "\\(\\tfrac{364}{365}\\)",
+      "1"
+    ],
+    correct: 0
+  },
+  // #50
+  {
+    text: "문제50) \\(\\dfrac{a^x + a^{-x}}{a^x - a^{-x}} = 5\\) 일 때, \\(a^x + a^{-2x}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\dfrac{3\\sqrt{6}+4}{6}\\)",
+      "\\(\\sqrt{6}\\)",
+      "3",
+      "\\(\\tfrac{5}{2}\\)"
+    ],
+    correct: 0
+  },
+  // #53
+  {
+    text: "문제53) \\(a^{1/2} - a^{-1/2} = 4\\) 일 때, \\(a + a^{-1}\\) 의 값을 구하시오.",
+    choices: [
+      "9","11","16","18"
+    ],
+    correct: 3
+  },
+  // #54
+  {
+    text: "문제54) \\(a^{1/2} - a^{-1/2} = 3\\) 일 때, \\(a^2 + a^{-2}\\) 의 값을 구하시오.",
+    choices: [
+      "47","52","119","121"
+    ],
+    correct: 2
+  },
+  // #57
+  {
+    text: "문제57) \\(a^x = \\tfrac12\\) 일 때, \\(\\dfrac{a^{3x} - a^{-3x}}{a^{x} - a^{-x}}\\) 의 값을 구하시오.",
+    choices: [
+      "\\(\\tfrac{21}{4}\\)",
+      "\\(\\tfrac{63}{8}\\)",
+      "-\\tfrac{21}{4}",
+      "6"
+    ],
+    correct: 0
+  }
+];
+
+//--------------------------------------------------
+// 글로벌 상태
+let currentQuestionIndex = -1;    // 현재 문제 인덱스 (랜덤 관리)
+let usedIndices = [];            // 이미 출제된 문제 인덱스(1바퀴 후 무한반복)
+let score = 0;                   // 현재 점수
+let life = 3;                    // 남은 기회
+let totalSeconds = 0;            // 전체 경과시간(초)
+let totalTimer = null;           // 전체 시간 setInterval
+let questionTimer = null;        // 문제별 타이머 setInterval
+let questionTimeLimit = 0;       // 난이도별 시간 (초)
+let barWidth = 100;             // 에너지바(%) 상태
+let gameOver = false;           // 게임 종료 여부
+let playerDifficulty = "low";    // 난이도
+let difficultyPoints = 10;       // 문제당 점수
+let nameInput = "";             // 플레이어 이름
+
+//--------------------------------------------------
+// 난이도 설정에 따른 제한시간, 점수 설정
+function setDifficulty(diff) {
+  playerDifficulty = diff;
+  switch(diff) {
+    case "top":
+      questionTimeLimit = 20;
+      difficultyPoints = 20;
+      break;
+    case "high":
+      questionTimeLimit = 30;
+      difficultyPoints = 15;
+      break;
+    case "mid":
+      questionTimeLimit = 40;
+      difficultyPoints = 13;
+      break;
+    case "low":
+      questionTimeLimit = 0;  // 무제한
+      difficultyPoints = 10;
+      break;
+  }
+}
+
+//--------------------------------------------------
+// 게임 시작
+function startGame() {
+  // 이름, 난이도
+  const nm = document.getElementById("playerName").value.trim();
+  if(!nm) {
+    alert("이름을 입력해주세요!");
+    return;
+  }
+  nameInput = nm;
+  
+  const diffSelect = document.getElementById("difficultySelect");
+  setDifficulty(diffSelect.value);
+
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("quizScreen").classList.remove("hidden");
+  
+  // 전체 타이머 시작
+  totalSeconds = 0;
+  gameOver = false;
+  life = 3;
+  score = 0;
+  usedIndices = [];
+
+  document.getElementById("scoreDisplay").textContent = score;
+  document.getElementById("lifeInfo").textContent = "남은 기회: " + life;
+  document.getElementById("totalTimeInfo").textContent = "전체 경과 시간: 0초";
+  
+  if(totalTimer) clearInterval(totalTimer);
+  totalTimer = setInterval(() => {
+    if(!gameOver) {
+      totalSeconds++;
+      document.getElementById("totalTimeInfo").textContent =
+        "전체 경과 시간: " + totalSeconds + "초";
+    }
+  }, 1000);
+
+  showNextQuestion();
+}
+
+//--------------------------------------------------
+function showNextQuestion() {
+  if(gameOver) return;
+
+  // 모두 출제했으면 무한반복 (usedIndices가 questions.length개면 재시작)
+  if(usedIndices.length >= questions.length) {
+    usedIndices = []; // 초기화해서 다시 랜덤
+  }
+  
+  // 무작위 인덱스 뽑되, 이미 사용한 건 제외
+  let idx = -1;
+  while(true) {
+    idx = Math.floor(Math.random() * questions.length);
+    if(!usedIndices.includes(idx)) {
+      usedIndices.push(idx);
+      break;
+    }
+  }
+  currentQuestionIndex = idx;
+
+  // 문제 표시
+  const q = questions[idx];
+  document.getElementById("questionText").innerHTML = q.text;
+  
+  const choiceDiv = document.getElementById("choiceList");
+  choiceDiv.innerHTML = "";
+  q.choices.forEach((cText, i) => {
+    const cElem = document.createElement("div");
+    cElem.className = "choice";
+    cElem.innerHTML = (i+1) + ") " + cText;
+    cElem.onclick = () => {
+      selectAnswer(i);
+    };
+    choiceDiv.appendChild(cElem);
+  });
+  
+  // 수식 렌더링
+  MathJax.typeset();
+
+  // 에너지바 초기화
+  if(questionTimer) clearInterval(questionTimer);
+  if(playerDifficulty === "low" || questionTimeLimit === 0) {
+    // 시간 무제한이면 에너지바 숨김
+    document.getElementById("energyBarContainer").classList.add("hidden");
+  } else {
+    document.getElementById("energyBarContainer").classList.remove("hidden");
+    barWidth = 100;
+    document.getElementById("energyBar").style.width = barWidth + "%";
+    
+    // 문제별 타이머
+    questionTimer = setInterval(() => {
+      barWidth--;
+      if(barWidth < 0) barWidth = 0;
+      document.getElementById("energyBar").style.width = barWidth + "%";
+      if(barWidth <= 0) {
+        // 시간 초과 -> 오답 처리
+        clearInterval(questionTimer);
+        handleWrong(true);
+      }
+    }, (questionTimeLimit*1000)/100); 
+  }
+}
+
+//--------------------------------------------------
+function selectAnswer(choiceIndex) {
+  // 정답 체크
+  if(gameOver) return;
+  const q = questions[currentQuestionIndex];
+  // 시간타이머 클리어
+  if(questionTimer) clearInterval(questionTimer);
+
+  if(choiceIndex === q.correct) {
+    // 정답
+    score += difficultyPoints;
+    document.getElementById("scoreDisplay").textContent = score;
+    alert("정답입니다!\n다음 문제로 넘어갑니다.");
+    showNextQuestion();
+  } else {
+    // 오답
+    handleWrong(false);
+  }
+}
+
+// 시간 초과 or 오답 처리
+function handleWrong(timeOut) {
+  if(gameOver) return;
+  const q = questions[currentQuestionIndex];
+  life--;
+  document.getElementById("lifeInfo").textContent = "남은 기회: " + life;
+
+  let msg = timeOut ? "시간 초과!" : "오답입니다!";
+  msg += "\n정답: " + (q.correct+1) + ") " + q.choices[q.correct];
+
+  if(life <= 0) {
+    gameOver = true;
+    alert(msg + "\n기회가 소진되어 게임이 종료됩니다.");
+    endGame();
+  } else {
+    alert(msg + "\n다음 문제로 넘어갑니다.");
+    showNextQuestion();
+  }
+}
+
+//--------------------------------------------------
+function endGame() {
+  gameOver = true;
+  if(questionTimer) clearInterval(questionTimer);
+  if(totalTimer) clearInterval(totalTimer);
+
+  document.getElementById("quizScreen").classList.add("hidden");
+  document.getElementById("endScreen").classList.remove("hidden");
+  
+  document.getElementById("finalScore").textContent = score;
+  document.getElementById("finalTime").textContent = totalSeconds;
+}
+
+//--------------------------------------------------
+// 점수 전송 함수
+function saveData(game, name, score, elapsedTime) {
+  const FUNCTION_URL = "https://us-central1-record-f420d.cloudfunctions.net/report";
+
+  const requestData = {
+    game,
+    name,
+    score: parseInt(score, 10),
+    elapsedTime: parseInt(elapsedTime, 10)
+  };
+
+  fetch(FUNCTION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestData)
+  })
+    .then(async (response) => {
+      const responseData = await response.json();
+      if(response.ok) {
+        document.getElementById('response').innerText = 
+          `성공: ${JSON.stringify(responseData, null, 2)}`;
+      } else {
+        document.getElementById('response').innerText = 
+          `오류: ${JSON.stringify(responseData, null, 2)}`;
+      }
+    })
+    .catch(error => {
+      console.error('요청 실패:', error);
+      document.getElementById('response').innerText =
+        `네트워크 오류: ${error.message}`;
+    });
+}
+
+//--------------------------------------------------
+function sendScore() {
+  // 게임 이름, 플레이어 이름, 점수, 전체 시간
+  saveData("지수법칙의 활용과 곱셈공식", nameInput, score, totalSeconds);
+}
+</script>
+
+</body>
+</html>
